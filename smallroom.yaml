@@ -1,0 +1,247 @@
+esphome:
+  name: smallroom
+
+esp32:
+  board: lolin_d32
+  framework:
+    type: arduino
+
+output:
+  - id: cold_white
+    platform: ledc
+    pin: 32
+    
+  - id: warm_white
+    platform: ledc
+    pin: 33
+    
+  - id: desk_button_led
+    platform: ledc
+    pin: 27
+    
+  - id: desk
+    platform: gpio
+    pin:
+      number: 14
+      inverted: true
+
+light:
+  - platform: cwww
+    id: led_curtain
+    name: "Smallroom LED"
+    cold_white: cold_white
+    warm_white: warm_white
+    cold_white_color_temperature: 6536 K
+    warm_white_color_temperature: 2000 K
+    constant_brightness: true
+    default_transition_length: 2.5s
+    icon: "mdi:led-strip-variant"
+    
+  - platform: binary
+    name: "Smallroom Desk Light"
+    output: desk
+    id: light_desk
+    icon: "mdi:desk"
+
+  - platform: monochromatic
+    name: "Smallroom Desk Button LED"
+    output: desk_button_led
+    icon: "mdi:power"
+
+binary_sensor:
+  - name: "Smallroom Desk Button"
+    platform: gpio
+    pin:
+      number: 23
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    filters:
+      - delayed_on: 100ms
+      - delayed_off: 100ms
+    on_click:
+    - min_length: 100ms
+      max_length: 400ms
+      then:
+        - light.toggle: light_desk
+    - min_length: 500ms
+      max_length: 2000ms
+      
+      then:
+      - if:
+          condition:
+            lambda: 'return id(colortemp_mode) == 0;'
+          then:
+            - logger.log: colortemp_mode is 11111111
+            - globals.set:
+                id: colortemp_mode
+                value: !lambda 'return 1;'
+            - light.turn_on:
+                id: led_curtain
+                transition_length: 0.5s
+                color_temperature: !lambda 'return 500.0;'
+                brightness: 100%
+            - if: 
+                condition:
+                  lambda: 'return id(set_mode) == 0;'
+                then:
+                  - globals.set:
+                      id: rotaryencoder_colortemp
+                      value: !lambda 'return 20.0;'#색온도(0-20)
+                  - sensor.rotary_encoder.set_value:
+                      id: rotaryencoder
+                      value: !lambda 'return 20.0;'#밝기(0-20)
+                else:
+                  - globals.set:
+                      id: rotaryencoder_brightness
+                      value: !lambda 'return 20.0;'#밝기(0-20)
+                  - sensor.rotary_encoder.set_value:
+                      id: rotaryencoder
+                      value: !lambda 'return 20.0;'#색온도(0-20)
+          else:
+          - if:
+              condition:
+                lambda: 'return id(colortemp_mode) == 1;'
+              then:
+                - logger.log: colortemp_mode is 22222222
+                - globals.set:
+                    id: colortemp_mode
+                    value: !lambda 'return 2;'
+                - light.turn_on:
+                    id: led_curtain
+                    transition_length: 0.5s
+                    color_temperature: !lambda 'return 153.0;'
+                    brightness: 100%
+                - if: 
+                    condition:
+                      lambda: 'return (id(set_mode) == 0);'
+                    then:
+                      - globals.set:
+                          id: rotaryencoder_colortemp
+                          value: !lambda 'return 0.0;'#색온도(0-20)
+                      - sensor.rotary_encoder.set_value:
+                          id: rotaryencoder
+                          value: !lambda 'return 20.0;'#밝기(0-20)
+                    else:
+                      - globals.set:
+                          id: rotaryencoder_brightness
+                          value: !lambda 'return 20.0;'#밝기(0-20)
+                      - sensor.rotary_encoder.set_value:
+                          id: rotaryencoder
+                          value: !lambda 'return 0.0;'#색온도(0-20)
+              else:
+              - if:
+                  condition:
+                    lambda: 'return id(colortemp_mode) == 2;'
+                  then:
+                    - logger.log: colortemp_mode is 33333333
+                    - globals.set:
+                        id: colortemp_mode
+                        value: !lambda 'return 3;'
+                    - light.turn_on:
+                        id: led_curtain
+                        transition_length: 0.5s
+                        color_temperature: !lambda 'return 326.5;'
+                        brightness: 100%
+                    - if: 
+                        condition:
+                          lambda: 'return (id(set_mode) == 0);'
+                        then:
+                          - globals.set:
+                              id: rotaryencoder_colortemp
+                              value: !lambda 'return 10.0;'#색온도(0-20)
+                          - sensor.rotary_encoder.set_value:
+                              id: rotaryencoder
+                              value: !lambda 'return 20.0;'#밝기(0-20)
+                        else:
+                          - globals.set:
+                              id: rotaryencoder_brightness
+                              value: !lambda 'return 20.0;'#밝기(0-20)
+                          - sensor.rotary_encoder.set_value:
+                              id: rotaryencoder
+                              value: !lambda 'return 10.0;'#색온도(0-20)
+                  else:
+                  - if:
+                      condition:
+                        lambda: 'return id(colortemp_mode) == 3;'
+                      then:
+                        - logger.log: colortemp_mode is 00000000
+                        - globals.set:
+                            id: colortemp_mode
+                            value: !lambda 'return 0;'
+                        - light.turn_off:
+                            id: led_curtain
+                            transition_length: 0.5s
+                            #color_temperature: !lambda 'return 153.0;'
+                            #brightness: 0%
+                        - globals.set:
+                            id: rotaryencoder_colortemp
+                            value: !lambda 'return 0.0;'#색온도(0-20)
+                        - globals.set:
+                            id: rotaryencoder_brightness
+                            value: !lambda 'return 0.0;'#밝기(0-20)
+                        - sensor.rotary_encoder.set_value:
+                            id: rotaryencoder
+                            value: !lambda 'return 0.0;'#밝기(0-20)
+  - name: "Smallroom RotaryEncoder Button"
+    platform: gpio
+    pin:
+      number: 21
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    filters:
+      - delayed_on: 10ms
+      - delayed_off: 10ms
+    on_click:
+    - min_length: 20ms
+      max_length: 350ms
+      then:
+        - if: 
+            condition:
+              lambda: 'return id(set_mode) == 0;'
+            then:
+              - globals.set:
+                  id: set_mode
+                  value: !lambda 'return 1;'
+              - sensor.rotary_encoder.set_value:
+                  id: rotaryencoder
+                  value: !lambda 'return id(rotaryencoder_colortemp);'
+            else:
+              - globals.set:
+                  id: set_mode
+                  value: !lambda 'return 0;'
+              - sensor.rotary_encoder.set_value:
+                  id: rotaryencoder
+                  value: !lambda 'return id(rotaryencoder_brightness);'
+
+    - min_length: 500ms
+      max_length: 2000ms
+      then:
+        - light.toggle: light_desk
+    - min_length: 2000ms
+      max_length: 5000ms
+      then:
+        - light.turn_off: light_desk
+        - light.turn_on:
+            id: led_curtain
+            transition_length: 3000ms
+            color_temperature: !lambda 'return 153.0;'
+            brightness: 0%
+        - globals.set:
+            id: set_mode
+            value: !lambda 'return 0;'
+        - globals.set:
+            id: colortemp_mode
+            value: !lambda 'return 0;'
+        - globals.set:
+            id: rotaryencoder_brightness
+            value: !lambda 'return 0.0;'
+        - globals.set:
+            id: rotaryencoder_colortemp
+            value: !lambda 'return 0.0;'
+        - sensor.rotary_encoder.set_value:
+            id: rotaryencoder
+            value: !lambda 'return 0.0;'
